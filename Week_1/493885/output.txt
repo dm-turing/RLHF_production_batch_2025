@@ -1,0 +1,1 @@
+This message will be written to both stdout and the file.

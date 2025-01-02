@@ -9,6 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type MockConfig struct {
+	Environment string `json:"environment"`
+	DatabaseURL string `json:"databaseURL"`
+	FeatureFlag bool   `json:"featureFlag"`
+}
+
 func TestConfigServerValidation(t *testing.T) {
 	client := &http.Client{}
 	resp, err := client.Get("http://localhost:8080/config")

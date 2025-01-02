@@ -6,23 +6,14 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
-	Database struct {
-		Host     string `yaml:"host"`
-		Port     int    `yaml:"port"`
-		User     string `yaml:"user"`
-		Password string `yaml:"password"`
-		DBName   string `yaml:"dbname"`
-	} `yaml:"database"`
-	Server struct {
-		Port string `yaml:"port"`
-	} `yaml:"server"`
+	Environment string `json:"environment"`
+	DatabaseURL string `json:"databaseURL"`
+	FeatureFlag bool   `json:"featureFlag"`
 }
 
 var config Config
@@ -56,22 +47,20 @@ func init() {
 	}
 }
 
+func getConfigByEnv(c *gin.Context) {
+	envVar := os.Getenv("ENVIRONMENT")
+	if envVar == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Environment variable 'ENVIRONMENT' not set"})
+		return
+	}
+	c.JSON(http.StatusOK, config)
+}
+
 func main() {
-	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	router := gin.Default()
+	router.GET("/config", getConfigByEnv)
 
-	r.Get("/config", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/yaml")
-		// Marshal configuration back to YAML and send as response
-		data, err := yaml.Marshal(config)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Write(data)
-	})
-
-	port := config.Server.Port
-	fmt.Printf("Starting server on port %s\n", port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	if err := router.Run(":8080"); err != nil {
+		fmt.Println("Server failed to start:", err)
+	}
 }

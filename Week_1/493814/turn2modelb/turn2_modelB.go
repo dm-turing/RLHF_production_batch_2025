@@ -29,11 +29,11 @@ var config Config
 
 func init() {
 	// Load configuration from YAML file based on environment variable
-	viper.SetConfigName("config") // name of config file (without extension)
-	viper.SetConfigType("yaml")   // set config file type
-	viper.AddConfigPath(".")      // add current directory to search path
-	// viper.AddConfigPath("$HOME/.config/myapp") // add home directory to search path
-	// viper.AddConfigPath("/etc/myapp")          // add system-wide config path
+	viper.SetConfigName("config")              // name of config file (without extension)
+	viper.SetConfigType("yaml")                // set config file type
+	viper.AddConfigPath(".")                   // add current directory to search path
+	viper.AddConfigPath("$HOME/.config/myapp") // add home directory to search path
+	viper.AddConfigPath("/etc/myapp")          // add system-wide config path
 
 	env := os.Getenv("ENV") // Get the environment variable
 	if env != "" {

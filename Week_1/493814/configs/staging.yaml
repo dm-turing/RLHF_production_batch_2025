@@ -1,0 +1,4 @@
+environment: staging
+databaseURL: localhost
+host: localhost
+port: 8080

@@ -20,7 +20,7 @@ type Config struct {
 var configStore = map[string]Config{}
 
 func loadConfigs() {
-	if err := ioutil.ReadFile("configs/dev.yaml"); err != nil {
+	if _, err := ioutil.ReadFile("configs/dev.yaml"); err != nil {
 		fmt.Println("Error loading dev config:", err)
 		return
 	}
@@ -30,7 +30,7 @@ func loadConfigs() {
 		"featureFlag": false
 	}`)
 
-	if err := ioutil.ReadFile("configs/staging.yaml"); err != nil {
+	if _, err := ioutil.ReadFile("configs/staging.yaml"); err != nil {
 		fmt.Println("Error loading staging config:", err)
 		return
 	}
@@ -40,7 +40,7 @@ func loadConfigs() {
 		"featureFlag": true
 	}`)
 
-	if err := ioutil.ReadFile("configs/prod.yaml"); err != nil {
+	if _, err := ioutil.ReadFile("configs/prod.yaml"); err != nil {
 		fmt.Println("Error loading prod config:", err)
 		return
 	}

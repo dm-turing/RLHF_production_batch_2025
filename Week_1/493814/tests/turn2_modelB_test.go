@@ -8,7 +8,7 @@ import (
 
 func TestClientCommunicationOverhead(t *testing.T) {
 	// Start the configuration server
-	go main()
+	// go main()
 
 	// Wait for the server to start
 	time.Sleep(1 * time.Second)

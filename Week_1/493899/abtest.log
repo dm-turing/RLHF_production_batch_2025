@@ -1,0 +1,10 @@
+2025/01/03 02:31:59.574779 Test: my_test, Event: success, Duration: 830ms
+2025/01/03 02:31:59.685920 Test: my_test, Event: success, Duration: 470ms
+2025/01/03 02:32:00.072555 Test: my_test, Event: success, Duration: 453ms
+2025/01/03 02:32:00.361346 Test: my_test, Event: success, Duration: 38ms
+2025/01/03 02:32:00.592087 Test: my_test, Event: success, Duration: 904ms
+2025/01/03 02:32:00.771244 Test: my_test, Event: failure, Duration: 410ms
+2025/01/03 02:32:01.175865 Test: my_test, Event: success, Duration: 16ms
+2025/01/03 02:32:01.397242 Test: my_test, Event: success, Duration: 347ms
+2025/01/03 02:32:01.845029 Test: my_test, Event: failure, Duration: 441ms
+2025/01/03 02:32:02.147860 Test: my_test, Event: failure, Duration: 777ms

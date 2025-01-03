@@ -27,7 +27,7 @@ type FileSystem struct {
 	mu            sync.RWMutex
 	root          string
 	entries       map[string]*FileInfo
-	sortedEntries []*FileInfo
+	sortedEntries []FileInfo
 	sortCriterion string
 }
 
@@ -36,7 +36,7 @@ func NewFileSystem(root string) *FileSystem {
 	return &FileSystem{
 		root:          root,
 		entries:       make(map[string]*FileInfo),
-		sortedEntries: []*FileInfo{},
+		sortedEntries: []FileInfo{},
 	}
 }
 
@@ -98,7 +98,7 @@ func (fs *FileSystem) reorderEntries() {
 		sort.Sort(ByAccessTime(fs.sortedEntries))
 	default:
 		// Implement other sort criteria as needed
-		sort.Sort(sort.StringSlice(fs.sortedEntries))
+		// sort.Sort(fs.sortedEntries)
 	}
 }
 
@@ -136,7 +136,8 @@ func (fs *FileSystem) Start() error {
 }
 
 func main() {
-	fs := NewFileSystem("/path/to/directory")
+	// fs := NewFileSystem("/path/to/directory")
+	fs := NewFileSystem(".")
 	err := fs.Start()
 	if err != nil {
 		fmt.Printf("Error starting file system: %v\n", err)
@@ -144,7 +145,7 @@ func main() {
 	}
 
 	// Update access time of a file
-	fs.Update("/path/to/directory/file.txt")
+	fs.Update("sample.txt")
 
 	// List files sorted by access time
 	paths := fs.List()

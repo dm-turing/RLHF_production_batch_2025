@@ -8,6 +8,14 @@ import (
 	"github.com/go-redis/redis"
 )
 
+// UserSession represents a user session
+type UserSession struct {
+	UserID    string    `json:"user_id"`
+	Username  string    `json:"username"`
+	LoggedIn  bool      `json:"logged_in"`
+	LastLogin time.Time `json:"last_login"`
+}
+
 // Connect to Redis for caching sessions
 var client *redis.Client = redis.NewClient(&redis.Options{
 	Addr:     "localhost:6379",

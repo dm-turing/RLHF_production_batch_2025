@@ -7,7 +7,7 @@ import (
 )
 
 type ThreadSafeMap struct {
-	mu sync.Mutex
+	mu sync.RWMutex
 	m  map[string]int
 }
 

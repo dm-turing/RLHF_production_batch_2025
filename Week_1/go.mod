@@ -23,8 +23,11 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.20.0 // indirect
+	github.com/go-redis/redis v6.15.9+incompatible // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
+	github.com/gorilla/securecookie v1.1.2 // indirect
+	github.com/gorilla/sessions v1.4.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jinzhu/gorm v1.9.16 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect

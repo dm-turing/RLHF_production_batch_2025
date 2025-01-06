@@ -2,3 +2,15 @@
 [2025-01-04T22:52:40+05:30] File Creation: Created file new_file.txt
 [2025-01-04T22:52:40+05:30] Navigation: Navigated to /home/user/docs
 [2025-01-04T22:52:40+05:30] File Modification: Modified file new_file.txt
+[2025-01-06T18:29:04+05:30] File Deletion: Deleted file new_file.txt
+[2025-01-06T18:29:04+05:30] File Creation: Created file new_file.txt
+[2025-01-06T18:29:04+05:30] Navigation: Navigated to /home/user/docs
+[2025-01-06T18:29:04+05:30] File Modification: Modified file new_file.txt
+2025/01/06 18:29:40 User exampleUser navigated to directory: /path/to/the/file
+2025/01/06 18:29:40 User exampleUser opened file: /path/to/the/file
+2025/01/06 18:29:40 User exampleUser saved file: /path/to/the/file
+2025/01/06 18:29:40 User exampleUser deleted file: /path/to/the/file
+2025/01/06 18:43:07 User exampleUser navigated to directory: /path/to/the/file
+2025/01/06 18:43:07 User exampleUser opened file: /path/to/the/file
+2025/01/06 18:43:07 User exampleUser saved file: /path/to/the/file
+2025/01/06 18:43:07 User exampleUser deleted file: /path/to/the/file

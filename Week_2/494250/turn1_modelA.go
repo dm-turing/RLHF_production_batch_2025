@@ -1,8 +1,8 @@
 package main
 
 import (
+	"archive/gzip"
 	"archive/tar"
-	"archive/zip"
 	"fmt"
 	"io"
 	"log"
@@ -42,7 +42,7 @@ func archiveFiles(srcDir, dstDir string, isCompressed bool) error {
 		}
 		defer gzFile.Close()
 
-		gzWriter := zip.NewWriter(gzFile)
+		gzWriter := gzip.NewWriter(gzFile)
 		defer gzWriter.Close()
 
 		tarWriter = tar.NewWriter(gzWriter)

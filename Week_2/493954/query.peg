@@ -1,0 +1,10 @@
+start = query
+
+query = term
+      | query "|" query
+      | query "&" query
+
+term = word ":" word
+      | "(" query ")"
+
+word = [a-zA-Z0-9_]+

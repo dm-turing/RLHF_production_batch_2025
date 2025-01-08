@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/olivere/elastic"
@@ -22,7 +23,7 @@ type Product struct {
 func CreateIndex(client *elastic.Client) error {
 	// Create a new index
 	ctx := context.Background()
-	_, err := client.Indices().Create(ctx).Index("ecommerce").BodyString(`
+	_, err := client.Index().Index("ecommerce").BodyString(`
 	{
 		"settings": {
 			"number_of_shards": 1,
@@ -103,4 +104,12 @@ func SearchProducts(client *elastic.Client, query string) ([]Product, error) {
 	}
 
 	return products, nil
+}
+
+func main() {
+	c, _ := elastic.NewClient()
+	err := CreateIndex(c)
+	if err != nil {
+		fmt.Println(err)
+	}
 }

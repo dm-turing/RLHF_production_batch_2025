@@ -3,6 +3,7 @@ module github.com/dm-turing/RLHF_production_batch_2025
 go 1.23.3
 
 require (
+	github.com/alecthomas/participle v0.7.1 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect

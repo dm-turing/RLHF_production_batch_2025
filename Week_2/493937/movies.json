@@ -1,0 +1,55 @@
+[	{
+		"title": "movie1",
+		"year": 2023,
+		"genre": ["genre1"], 
+		"rating": 4.5
+	},
+	{
+		"title": "movie2",
+		"year": 2022,
+		"genre": ["genre2"], 
+		"rating": 4
+	},
+	{
+		"title": "movie3",
+		"year": 2023,
+		"genre": ["genre3"], 
+		"rating": 3.5
+	},
+	{
+		"title": "movie4",
+		"year": 2023,
+		"genre": ["genre1"], 
+		"rating": 2.5
+	},
+	{
+		"title": "movie5",
+		"year": 2022,
+		"genre": ["genre2"], 
+		"rating": 2
+	},
+	{
+		"title": "movie6",
+		"year": 2023,
+		"genre": ["genre3"], 
+		"rating": 2.5
+	},
+	{
+		"title": "movie7",
+		"year": 2023,
+		"genre": ["genre1"], 
+		"rating": 4.234
+	},
+	{
+		"title": "movie8",
+		"year": 2022,
+		"genre": ["genre2"], 
+		"rating": 4.9
+	},
+	{
+		"title": "movie9",
+		"year": 2023,
+		"genre": ["genre3"], 
+		"rating": 3.125
+	}
+]

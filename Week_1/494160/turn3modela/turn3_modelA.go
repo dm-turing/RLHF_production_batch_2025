@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -65,17 +66,24 @@ func (sm *SessionManager) GenerateSessionToken() string {
 
 // EncryptSessionData encrypts session data
 func (sm *SessionManager) EncryptSessionData(data []byte) ([]byte, error) {
-	nonce := make([]byte, 24)
-	if _, err := rand.Read(nonce); err != nil {
+	// nonce := make([]byte, 24)
+	var nonce [24]byte
+	if _, err := rand.Read(nonce[:]); err != nil {
 		return nil, err
 	}
-	return secretbox.Seal(nonce, data, nonce, &sm.privateKey), nil
+	return secretbox.Seal(nonce[:], data, &nonce, &sm.privateKey), nil
 }
 
 // DecryptSessionData decrypts session data
 func (sm *SessionManager) DecryptSessionData(data []byte) ([]byte, error) {
-	nonce, data := data[:24], data[24:]
-	return secretbox.Open(nil, data, nonce, &sm.privateKey)
+	var nonce [24]byte
+	data, err := data[24:], fmt.Errorf("%s", "")
+	copy(nonce[:], data[:24])
+	res, success := secretbox.Open(nil, data, &nonce, &sm.privateKey)
+	if !success {
+		err = fmt.Errorf("error in open function call")
+	}
+	return res, err
 }
 
 // CreateSession creates a new session
@@ -131,7 +139,8 @@ func (sm *SessionManager) InvalidateSession(sessionToken string) {
 func main() {
 	// Initialize session manager
 	sm := NewSessionManager()
-
+	privatekeybytes, _ := hex.DecodeString("secret_key")
+	copy(sm.privateKey[:], privatekeybytes)
 	// Generate a private key for encryption (should be done securely and stored)
 	if _, err := rand.Read(sm.privateKey[:]); err != nil {
 		log.Fatal(err)

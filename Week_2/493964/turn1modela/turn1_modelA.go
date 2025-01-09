@@ -78,10 +78,6 @@ func fetchProducts(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "error retrieving rating", http.StatusInternalServerError)
 			return
 		}
-		/*if err := results.Record().Scan(&product.Name, &product.Price, &product.Rating); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}*/
 		product = Product{Name: name.(string), Price: price.(float64), Rating: rating.(float64)}
 		products = append(products, product)
 	}

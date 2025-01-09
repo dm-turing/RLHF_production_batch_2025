@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -66,17 +65,17 @@ func (sm *SessionManager) GenerateSessionToken() string {
 
 // EncryptSessionData encrypts session data
 func (sm *SessionManager) EncryptSessionData(data []byte) ([]byte, error) {
-	// nonce := make([]byte, 24)
-	var nonce [24]byte
+	nonce := [24]byte{}
 	if _, err := rand.Read(nonce[:]); err != nil {
 		return nil, err
 	}
+
 	return secretbox.Seal(nonce[:], data, &nonce, &sm.privateKey), nil
 }
 
 // DecryptSessionData decrypts session data
 func (sm *SessionManager) DecryptSessionData(data []byte) ([]byte, error) {
-	var nonce [24]byte
+	nonce := [24]byte{}
 	data, err := data[24:], fmt.Errorf("%s", "")
 	copy(nonce[:], data[:24])
 	res, success := secretbox.Open(nil, data, &nonce, &sm.privateKey)
@@ -96,16 +95,19 @@ func (sm *SessionManager) CreateSession(userID, username string) (string, error)
 	}
 
 	sessionData, err := json.Marshal(session)
+
 	if err != nil {
 		return "", err
 	}
 
 	encryptedData, err := sm.EncryptSessionData(sessionData)
+
 	if err != nil {
 		return "", err
 	}
 
 	sessionToken := sm.GenerateSessionToken()
+
 	sm.redis.Set(sessionToken, encryptedData, 3600*time.Second).Err() // Cache for 1 hour
 
 	return sessionToken, nil
@@ -139,13 +141,11 @@ func (sm *SessionManager) InvalidateSession(sessionToken string) {
 func main() {
 	// Initialize session manager
 	sm := NewSessionManager()
-	privatekeybytes, _ := hex.DecodeString("secret_key")
-	copy(sm.privateKey[:], privatekeybytes)
+
 	// Generate a private key for encryption (should be done securely and stored)
 	if _, err := rand.Read(sm.privateKey[:]); err != nil {
 		log.Fatal(err)
 	}
-
 	// Create a simple HTTP handler
 	r := mux.NewRouter()
 
@@ -161,6 +161,7 @@ func main() {
 
 	r.HandleFunc("/profile", func(w http.ResponseWriter, r *http.Request) {
 		sessionToken, err := r.Cookie("session_token")
+
 		if err != nil || sessionToken.Value == "" {
 			http.Error(w, "Not logged in.", http.StatusUnauthorized)
 			return

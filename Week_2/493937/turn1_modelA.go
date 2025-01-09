@@ -17,8 +17,8 @@ type Movie struct {
 }
 
 type MovieDistance struct {
-	Moviee   Movie   `json: "moviee"`
-	Distance float64 `json: "distance"`
+	MovieType Movie   `json: "moviee"`
+	Distance  float64 `json: "distance"`
 }
 
 func loadMovies() ([]Movie, error) {
@@ -58,8 +58,8 @@ func knnRecommend(movies []Movie, target Movie, k int) ([]Movie, error) {
 	distances := make([]*MovieDistance, len(movies))
 	for i, movie := range movies {
 		distances[i] = &MovieDistance{
-			Moviee:   movie,
-			Distance: euclideanDistance(movie, target),
+			MovieType: movie,
+			Distance:  euclideanDistance(movie, target),
 		}
 	}
 
@@ -70,7 +70,7 @@ func knnRecommend(movies []Movie, target Movie, k int) ([]Movie, error) {
 	recommendations := make([]Movie, k)
 	for i := 0; i < k; i++ {
 		if i < len(distances) {
-			recommendations[i] = distances[i].Moviee
+			recommendations[i] = distances[i].MovieType
 		}
 	}
 

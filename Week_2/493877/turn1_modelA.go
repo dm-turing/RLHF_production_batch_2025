@@ -22,8 +22,8 @@ func NewRateLimiter(redisURL string) (*RateLimiter, error) {
 		DB:       0,
 	})
 
-	success, err := client.Ping().Result()
-	fmt.Println(success)
+	_, err := client.Ping().Result()
+
 	if err != nil {
 		return nil, err
 	}

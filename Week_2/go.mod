@@ -30,6 +30,7 @@ require (
 	github.com/neo4j/neo4j-go-driver v1.8.3 // indirect
 	github.com/neo4j/neo4j-go-driver/v4 v4.4.7 // indirect
 	github.com/olivere/elastic v6.2.37+incompatible // indirect
+	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/qe-team/marmot v0.0.0-20171029074317-38e09ff1d0a3 // indirect

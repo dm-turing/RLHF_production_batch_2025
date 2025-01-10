@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -33,6 +32,9 @@ func corsMiddleware(next http.Handler) func(w http.ResponseWriter, r *http.Reque
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization")
+		} else {
+			http.Error(w, "Request not allowed", http.StatusForbidden)
+			return
 		}
 		next.ServeHTTP(w, r)
 	}
@@ -48,10 +50,8 @@ func rbacMiddleware(next http.Handler) http.Handler {
 
 		// Validate token (for demonstration purposes, we assume a valid token)
 		var user User
-		u := User{ID: 1, Name: "i", Role: "admin", Token: "sdfsd"}
-		o, _ := json.Marshal(u)
-		fmt.Println(string(o))
 		err := json.Unmarshal([]byte(authToken), &user)
+
 		if err != nil {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return

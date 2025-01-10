@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -24,9 +25,9 @@ var ValidRoles = []Role{"admin", "user"}
 
 // Middleware functions
 
-func corsMiddleware(next http.Handler) http.Handler {
+func corsMiddleware(next http.Handler) func(w http.ResponseWriter, r *http.Request) {
 	allowedOrigins := []string{"http://example.com", "https://another-example.com"}
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 		if strings.Contains(strings.Join(allowedOrigins, ","), origin) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -34,7 +35,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization")
 		}
 		next.ServeHTTP(w, r)
-	})
+	}
 }
 
 func rbacMiddleware(next http.Handler) http.Handler {
@@ -47,6 +48,9 @@ func rbacMiddleware(next http.Handler) http.Handler {
 
 		// Validate token (for demonstration purposes, we assume a valid token)
 		var user User
+		u := User{ID: 1, Name: "i", Role: "admin", Token: "sdfsd"}
+		o, _ := json.Marshal(u)
+		fmt.Println(string(o))
 		err := json.Unmarshal([]byte(authToken), &user)
 		if err != nil {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)

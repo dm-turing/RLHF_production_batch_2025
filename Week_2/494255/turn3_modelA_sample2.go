@@ -9,6 +9,14 @@ import (
 	"github.com/go-redis/redis"
 )
 
+// Movie represents a movie recommendation.
+type Movie struct {
+	ID     int     `json:"id"`
+	Title  string  `json:"title"`
+	Genre  string  `json:"genre"`
+	Rating float64 `json:"rating"`
+}
+
 func main() {
 	filePath := "movies.json" // Replace with your JSON file path
 	redisClient := redis.NewClient(&redis.Options{

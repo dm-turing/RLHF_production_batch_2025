@@ -37,7 +37,7 @@ func main() {
 	scanner := bufio.NewScanner(file)
 	scanner.Scan()
 	header := scanner.Text()
-	fmt.Println(header)
+
 	if header != "id,title,genre,rating" {
 		log.Fatalf("Invalid CSV header: %s", header)
 	}

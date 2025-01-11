@@ -1,0 +1,56 @@
+[
+	{
+		"id": 1,
+		"title": "Title 1",  
+		"genre": "Genre 1", 
+		"rating": 4.5
+	},
+	{
+		"id": 2,
+		"title": "Title 2",  
+		"genre": "Genre 2", 
+		"rating": 4
+	},
+	{
+		"id": 3,
+		"title": "Title 3",  
+		"genre": "Genre 3", 
+		"rating": 3.5
+	},
+	{
+		"id": 4,
+		"title": "Title 4",  
+		"genre": "Genre 4", 
+		"rating": 4.25
+	},
+	{
+		"id": 5,
+		"title": "Title 5",  
+		"genre": "Genre 5", 
+		"rating": 4.2
+	},
+	{
+		"id": 6,
+		"title": "Title 6",  
+		"genre": "Genre 6", 
+		"rating": 3.15
+	},
+	{
+		"id": 7,
+		"title": "Title 7",  
+		"genre": "Genre 7", 
+		"rating": 4.9
+	},
+	{
+		"id": 8,
+		"title": "Title 8",  
+		"genre": "Genre 8", 
+		"rating": 3.75
+	},
+	{
+		"id": 9,
+		"title": "Title 9",  
+		"genre": "Genre 9", 
+		"rating": 2.75
+	}
+]

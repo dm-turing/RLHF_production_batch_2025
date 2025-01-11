@@ -149,10 +149,13 @@ func main() {
 			break
 		}
 		input := scanner.Text()
+		if input == "exit" {
+			break
+		}
 		cmdArgs := strings.Fields(input)
 		cmd := correctWord(cmdArgs[0])
-		args := strings.Join(cmdArgs[1:], " ")
-		result, err := registry.Invoke(cmd, args)
+		args := strings.Join(cmdArgs[2:], " ")
+		result, err := registry.Invoke(cmdArgs[1], args)
 		if err != nil {
 			fmt.Println("Error:", err)
 		} else {

@@ -1,102 +1,99 @@
-package main  
-import (  
-    "fmt"
-    "log"
-    "net/http"
-    "github.com/gorilla/mux"
-    "github.com/sirupsen/logrus"
+package main
+
+import (
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
-type Product struct {  
-    ID    string `json:"id"`
-    Name  string `json:"name"`
-    Price float64 `json:"price"`
+func main() {
+	router := mux.NewRouter()
+	// Create a new logger
+	logger := logrus.New()
+	// Set the log level to warn for production environment, trace otherwise
+	if os.Getenv("GO_ENV") == "production" {
+		logger.SetLevel(logrus.WarnLevel)
+	} else {
+		logger.SetLevel(logrus.TraceLevel)
+	}
+	// Attach the logger to the request-response logging middleware
+	logrusMiddleware := NewLogrusMiddleware(logger)
+	// Assign the middleware to the Gorilla mux router
+	router.Use(logrusMiddleware.Middleware)
+
+	// Define routes
+	router.HandleFunc("/products", GetProductsHandler).Methods("GET")
+	router.HandleFunc("/products/{id}", GetProductHandler).Methods("GET")
+	router.HandleFunc("/orders", CreateOrderHandler).Methods("POST")
+	//... other routes
+
+	log.Fatal(http.ListenAndServe(":8080", router))
+} 
+
+// Product represents a product in the E-Commerce website
+type Product struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Price float32 `json:"price"`
 }
 
-var products []Product  
+// example handlers for demonstration purposes
+func GetProductsHandler(w http.ResponseWriter, r *http.Request) {
+	// Implement the product fetching logic
+	products := []Product{
+		{ID: "1", Name: "Phone", Price: 699.99},
+		{ID: "2", Name: "Laptop", Price: 1099.99},
+	}
 
-// Logging Middleware  
-func LoggingMiddleware(next http.Handler) http.Handler {  
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {  
-        logger := logrus.WithFields(logrus.Fields{  
-            "method": r.Method,
-            "path":   r.URL.Path,
-        })
-
-        // Start timer
-        start := logrus.Now()
-
-        // Handle request
-        next.ServeHTTP(w, r)
-
-        // Log request details
-        logger.WithFields(logrus.Fields{  
-            "status": w.Header().Get("Status"),
-            "latency": logrus.Since(start),
-        }).Info("Request processed")
-    })  
+	respondWithJSON(w, http.StatusOK, products)
 }
 
-func GetProducts(w http.ResponseWriter, r *http.Request) {  
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(products)
+func GetProductHandler(w http.ResponseWriter, r *http.Request) {
+    // Implement the product fetching logic
+    productID := mux.Vars(r)["id"]
+    product := Product{ID: productID, Name: "Sample Product", Price: 99.99}
+    respondWithJSON(w, http.StatusOK, product)
+}
+func CreateOrderHandler(w http.ResponseWriter, r *http.Request) {
+    // Implement the order creation logic
+	respondWithJSON(w, http.StatusCreated, map[string]string{"message": "Order created successfully"})
+}
+// responseWithJSON writes the given payload with the specified HTTP status code and a 'Content-Type: application/json' header.
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	err := json.NewEncoder(w).Encode(payload)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
-func GetProduct(w http.ResponseWriter, r *http.Request) {  
-    params := mux.Vars(r)
-    for _, item := range products {  
-        if item.ID == params["id"] {  
-            json.NewEncoder(w).Encode(item)
-            return
-        }
-    }
-    json.NewEncoder(w).Encode(&Product{})
+// LogrusMiddleware is the custom middleware that log the requests and responses.
+type LogrusMiddleware struct {
+	logger *logrus.Logger
 }
 
-func CreateProduct(w http.ResponseWriter, r *http.Request) {  
-    var newProduct Product
-    json.NewDecoder(r.Body).Decode(&newProduct)
-    products = append(products, newProduct)
-    json.NewEncoder(w).Encode(newProduct)
+// NewLogrusMiddleware returns a new LogrusMiddleware
+func NewLogrusMiddleware(logger *logrus.Logger) *LogrusMiddleware {
+	return &LogrusMiddleware{logger: logger}
 }
 
-func UpdateProduct(w http.ResponseWriter, r *http.Request) {  
-    params := mux.Vars(r)
-    for index, item := range products {  
-        if item.ID == params["id"] {  
-            products = append(products[:index], products[index+1:]...)
-            var updatedProduct Product
-            json.NewDecoder(r.Body).Decode(&updatedProduct)
-            updatedProduct.ID = params["id"]
-            products = append(products, updatedProduct)
-            json.NewEncoder(w).Encode(updatedProduct)
-            return
-        }
-    }
-    json.NewEncoder(w).Encode(products)
-}
+func (lm *LogrusMiddleware) Middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
 
-func DeleteProduct(w http.ResponseWriter, r *http.Request) {  
-    params := mux.Vars(r)
-    for index, item := range products {  
-        if item.ID == params["id"] {  
-            products = append(products[:index], products[index+1:]...)
-            break
-        }
-    }
-    json.NewEncoder(w).Encode(products)
-}
+		// Process request
+		next.ServeHTTP(w, r)
 
-func main() {  
-    router := mux.NewRouter()
+		// Calculate request time
+		elapsed := time.Since(start)
 
-    // Initialize products data
-    products = append(products, Product{ID: "1", Name: "Product1", Price: 100})
-    products = append(products, Product{ID: "2", Name: "Product2", Price: 200})
-
-    // Define routes
-    router.HandleFunc("/products", GetProducts).Methods("GET")
-    router.HandleFunc("/products/{id}", GetProduct).Methods("GET")
-    router.HandleFunc("/products", CreateProduct).Methods("POST")
-    router.HandleFunc("/products/{id}", UpdateProduct).Methods("PUT")
-    router.HandleFunc("/products/{id}", DeleteProduct).Methods("DELETE")
+		// Extract request information
+		reqMethod := r.Method
+		reqURI := r.RequestURI
+		reqStatus := w.(statuswriter.StatusWriter).Status()
+		reqSize := w.(statuswriter.StatusWriter).Size()

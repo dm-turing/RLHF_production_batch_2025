@@ -2,51 +2,50 @@ package main
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
-// Logger middleware using logrus
-func loggerMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Capture request information
-		logrus.Infof("Incoming request: %s %s", c.Request.Method, c.Request.URL.Path)
-		c.Next()
-
-		// Capture response information
-		statusCode := c.Writer.Status()
-		logrus.Infof("Response sent: status %d, latency %s", statusCode, gin.StatusDuration(c))
-
-		// Capture potential security alerts like authentication failures
-		if c.Errors.Has() {
-			for _, err := range c.Errors {
-				logrus.Warnf("Error: %s", err.Error())
-			}
-		}
-	}
-}
-
-// An example handler for a GET request
-func getProducts(c *gin.Context) {
-	products := []string{"Laptop", "Smartphone", "Tablet"}
-	c.JSON(http.StatusOK, products)
-}
+var log = logrus.New()
 
 func main() {
-	// Initialize logrus
-	logrus.SetFormatter(&logrus.JSONFormatter{})
-	logrus.SetLevel(logrus.InfoLevel)
+	// Set the logging level to debug for detailed logs
+	log.SetLevel(logrus.DebugLevel)
+	// Set the formatter to output JSON logs
+	log.SetFormatter(&logrus.JSONFormatter{})
 
-	// Create a new gin router
-	router := gin.Default()
+	// Create a new Gin router
+	r := gin.Default()
 
-	// Add logging middleware
-	router.Use(loggerMiddleware())
+	// Define a logging middleware
+	r.Use(func(c *gin.Context) {
+		start := time.Now()
 
-	// Add routes
-	router.GET("/products", getProducts)
+		// Process the request
+		c.Next()
 
-	// Start server
-	router.Run(":8080")
+		// Record the end time
+		end := time.Now()
+		latency := end.Sub(start)
+
+		// Log request details
+		log.WithFields(logrus.Fields{
+			"method":      c.Request.Method,
+			"path":        c.Request.URL.Path,
+			"status":      c.Writer.Status(),
+			"latency":     latency.String(),
+			"remote_addr": c.Request.RemoteAddr,
+			"user_agent":  c.Request.UserAgent(),
+		}).Debug("Request processed")
+	})
+
+	// Define a sample handler for demonstration
+	r.GET("/products", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "Product list"})
+	})
+
+	// Start the server
+	r.Run(":8080")
 }

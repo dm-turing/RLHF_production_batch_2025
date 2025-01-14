@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	_ "github.com/ncruces/go-sqlite3/driver"
-	_ "github.com/ncruces/go-sqlite3/embed"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // User represents a user in the database

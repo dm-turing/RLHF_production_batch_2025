@@ -6,8 +6,11 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	_ "github.com/ncruces/go-sqlite3/driver"
@@ -22,8 +25,6 @@ func init() {
 	if err != nil {
 		log.Fatalf("Error opening database: %v", err)
 	}
-	defer db.Close()
-
 	_, err = db.Exec(`
 	CREATE TABLE IF NOT EXISTS metrics (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,12 +43,6 @@ func init() {
 }
 
 func handleLogRequest(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("sqlite3", "metrics.db")
-	if err != nil {
-		log.Fatalf("Error opening database: %v", err)
-	}
-	defer db.Close()
-
 	params := r.URL.Query()
 	if len(params) == 0 {
 		http.Error(w, "No query parameters provided", http.StatusBadRequest)
@@ -74,12 +69,6 @@ func handleLogRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleGetMetrics(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("sqlite3", "metrics.db")
-	if err != nil {
-		log.Fatalf("Error opening database: %v", err)
-	}
-	defer db.Close()
-
 	rows, err := db.Query("SELECT parameter, count, frequency, error_rate, avg_length, avg_response_time, server_load FROM metrics")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -100,14 +89,6 @@ func handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func populateDatabase() {
-	var db *sql.DB
-	var err error
-	db, err = sql.Open("sqlite3", "metrics.db")
-	if err != nil {
-		log.Fatalf("Error opening database: %v", err)
-	}
-	defer db.Close()
-
 	params := []string{"param1", "param2", "param3", "param4", "param5"}
 
 	for i := 0; i < 100; i++ {
@@ -115,7 +96,7 @@ func populateDatabase() {
 		length := rand.Intn(100) + 1
 		value := strings.Repeat(strconv.Itoa(rand.Intn(1000)), length)
 
-		_, err = db.Exec("INSERT INTO metrics (parameter, count, frequency, error_rate, avg_length, avg_response_time, server_load) VALUES (?, 1, 1, 0.0, ?, 0, 0.0) ON CONFLICT (parameter) DO UPDATE SET count = count + 1, frequency = frequency + 1, avg_length = (avg_length * (frequency - 1) + ?) / frequency", param, len(value), len(value))
+		_, err := db.Exec("INSERT INTO metrics (parameter, count, frequency, error_rate, avg_length, avg_response_time, server_load) VALUES (?, 1, 1, 0.0, ?, 0, 0.0) ON CONFLICT (parameter) DO UPDATE SET count = count + 1, frequency = frequency + 1, avg_length = (avg_length * (frequency - 1) + ?) / frequency", param, len(value), len(value))
 		if err != nil {
 			log.Fatalf("Error inserting data: %v", err)
 		}
@@ -123,12 +104,26 @@ func populateDatabase() {
 }
 
 func main() {
+	defer db.Close()
+	// Setting up a signal handler
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-signals
+		log.Println("Shutting down the database instance gracefully...")
+		db.Close() // Close the database connection
+		os.Exit(0)
+	}()
+
+	// Your application logic here
 	rand.Seed(time.Now().UnixNano())
 	populateDatabase()
 	http.HandleFunc("/log-request", handleLogRequest)
 	http.HandleFunc("/get-metrics", handleGetMetrics)
 	log.Println("Server listening on port 8080")
-	if err := http.ListenAndServe(":8080", http.DefaultServeMux); err != nil {
+	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
 	}
+	select {}
 }

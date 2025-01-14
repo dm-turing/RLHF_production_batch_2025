@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/ncruces/go-sqlite3/driver"
@@ -42,6 +45,19 @@ func init() {
 }
 
 func main() {
+	defer db.Close()
+
+	// Setting up a signal handler
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-signals
+		log.Println("Shutting down gracefully...")
+		db.Close() // Close the database connection
+		os.Exit(0)
+	}()
+
 	// Initialize Gin router
 	r := gin.Default()
 
@@ -51,6 +67,8 @@ func main() {
 
 	// Start the server
 	log.Fatal(r.Run(":8080"))
+
+	select {}
 }
 
 // createTables creates the tables in the SQLite database

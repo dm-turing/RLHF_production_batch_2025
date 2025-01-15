@@ -166,8 +166,6 @@ func createProject(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// defer db.Close()
-
 	// Setting up a signal handler
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)

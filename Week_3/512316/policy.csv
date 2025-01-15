@@ -1,0 +1,5 @@
+p, user1, project1, create_project
+p, user1, project2, read
+g, user2, admin
+
+

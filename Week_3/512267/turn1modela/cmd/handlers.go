@@ -4,19 +4,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand/v2"
 	"net/http"
 
 	"github.com/gorilla/mux"
 
-	"go-ecommerce/lib/db"
-	"go-ecommerce/lib/redis"
+	"../lib/db"
+	"../lib/redis"
 )
 
 type User struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	ConversionRate float32 `json:"conversion_rate"`
+	ID              int     `json:"id"`
+	Name            string  `json:"name"`
+	Email           string  `json:"email"`
+	ConversionRate  float32 `json:"conversion_rate"`
 	SessionDuration float32 `json:"session_duration"`
 }
 
@@ -97,8 +98,8 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate random engagement metrics
-	user.ConversionRate = float32(rand.Float64())*100
-	user.SessionDuration = float32(rand.Float64())*60
+	user.ConversionRate = float32(rand.Float64()) * 100
+	user.SessionDuration = float32(rand.Float64()) * 60
 
 	err := db.AddUser(user)
 	if err != nil {

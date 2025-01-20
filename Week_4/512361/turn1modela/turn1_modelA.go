@@ -11,7 +11,6 @@ import (
 	// _ "github.com/mattn/go-sqlite3"
 	_ "github.com/ncruces/go-sqlite3/driver"
 	_ "github.com/ncruces/go-sqlite3/embed"
-
 )
 
 // FileMetadata holds the basic metadata about a file
@@ -93,7 +92,7 @@ func main() {
 	}
 
 	var files []string
-	err = filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk("allFiles", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

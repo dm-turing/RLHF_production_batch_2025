@@ -4,15 +4,17 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
 	// _ "github.com/mattn/go-sqlite3"
-    _ "github.com/ncruces/go-sqlite3/driver"
+	_ "github.com/ncruces/go-sqlite3/driver"
 	_ "github.com/ncruces/go-sqlite3/embed"
-
 )
+
+var numWorkers = 3
 
 // Define your Metadata struct
 type Metadata struct {
@@ -41,6 +43,16 @@ func storeMetadata(db *sql.DB, filePath string, metadata *Metadata) error {
 func main() {
 	var wg sync.WaitGroup
 	filePaths := make(chan string, 100) // Buffered channel with capacity 100
+	var allFiles []string
+	filepath.Walk("allFiles", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			allFiles = append(allFiles, path)
+		}
+		return nil
+	})
 
 	// Spawn worker goroutines
 	for i := 0; i < numWorkers; i++ {

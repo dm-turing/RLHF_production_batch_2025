@@ -1,79 +1,104 @@
-package main  
-import (  
-    "fmt"
-    "log"
-    "net/http"
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"time"
 )
 
-// ErrorLogger is a middleware function that takes an http.Handler
-// and returns an http.Handler. It's responsible for logging errors
-// based on user input.
-type ErrorLogger func(http.Handler) http.Handler
-
-// ComposeErrorLogs takes a variable number of ErrorLogger middleware
-// functions and returns a new ErrorLogger that chains them together.
-func ComposeErrorLogs(middleware ...ErrorLogger) ErrorLogger {
-    return func(h http.Handler) http.Handler {
-        for _, m := range middleware {
-            h = m(h)
-        }
-        return h
-    }
+type MouseEvent struct {
+	Type string // e.g., "Click", "DoubleClick", "Move", "Drag"
+	X    int
+	Y    int
+	// Add other relevant mouse event attributes as needed
 }
 
-// LogUserInput is an ErrorLogger middleware that logs the user's input
-// if it's not empty.
-func LogUserInput(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        err := r.ParseForm()
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusBadRequest)
-            return
-        }
+type MouseEventCallback func(event MouseEvent)
 
-        userInput := r.FormValue("userInput")
-        if userInput != "" {
-            log.Printf("User input: %s", userInput)
-        }
-
-        next.ServeHTTP(w, r)
-    })
+type EventHandler struct {
+	callbacks []MouseEventCallback
 }
 
-// LogErrorMessage is an ErrorLogger middleware that logs the error message
-// if it's not empty.
-func LogErrorMessage(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        err := r.ParseForm()
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusBadRequest)
-            return
-        }
-
-        errorMessage := r.FormValue("errorMessage")
-        if errorMessage != "" {
-            log.Printf("Error message: %s", errorMessage)
-        }
-
-        next.ServeHTTP(w, r)
-    })
+func NewEventHandler() *EventHandler {
+	return &EventHandler{callbacks: []MouseEventCallback{}}
 }
 
-// main is the entry point of the application.
+func (h *EventHandler) RegisterCallback(callback MouseEventCallback) {
+	h.callbacks = append(h.callbacks, callback)
+}
+
+func (h *EventHandler) HandleEvent(event MouseEvent) {
+	for _, callback := range h.callbacks {
+		callback(event)
+	}
+}
+
+type GuiApplication interface {
+	Run() error
+	RegisterMouseEventCallback(callback MouseEventCallback)
+}
+
+type PollingGuiApplication struct {
+	eventHandler *EventHandler
+	// Add other GUI-specific fields
+}
+
+func NewPollingGuiApplication() *PollingGuiApplication {
+	app := &PollingGuiApplication{
+		eventHandler: NewEventHandler(),
+	}
+	// Initialize GUI components here
+	return app
+}
+
+func (a *PollingGuiApplication) Run() error {
+	// Main event loop
+	for {
+		event := a.pollGuiEvent()
+		if event.Type != "" {
+			a.eventHandler.HandleEvent(event)
+		}
+		// Add sleep or yield here to prevent tight looping
+	}
+}
+
+func (a *PollingGuiApplication) pollGuiEvent() MouseEvent {
+	// Implement GUI-specific event polling logic
+	// For this example, let's simulate polling with a timer
+	event := MouseEvent{}
+	time.Sleep(100 * time.Millisecond)
+	event.Type = "Move"
+	event.X = rand.Intn(100)
+	event.Y = rand.Intn(100)
+	return event
+}
+
+func (a *PollingGuiApplication) RegisterMouseEventCallback(callback MouseEventCallback) {
+	a.eventHandler.RegisterCallback(callback)
+}
+
+// Callback to log mouse events
+func logMouseEvent(event MouseEvent) {
+	fmt.Printf("Mouse Event: %+v\n", event)
+}
+
+// Callback to handle drag events
+func handleDragEvent(event MouseEvent) {
+	if event.Type == "Drag" {
+		fmt.Println("Dragging...")
+	}
+}
+
 func main() {
-    // Create an HTTP handler for the root path ("/").
-    rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, "Hello, world!")
-    })
+	app := NewPollingGuiApplication()
 
-    // Compose the error loggers using the ComposeErrorLogs function.
-    errorLogger := ComposeErrorLogs(LogUserInput, LogErrorMessage)
+	// Register callbacks
+	app.RegisterMouseEventCallback(logMouseEvent)
+	app.RegisterMouseEventCallback(handleDragEvent)
 
-    // Wrap the root handler with the error logger.
-    http.Handle("/", errorLogger(rootHandler))
-
-    // Start the HTTP server on port 8080.
-    log.Println("Server starting on port 8080")
-    log.Fatal(http.ListenAndServe(":8080", nil))
+	// Start the event loop
+	if err := app.Run(); err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
 }
-

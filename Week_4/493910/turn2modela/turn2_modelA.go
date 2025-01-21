@@ -19,7 +19,6 @@ type UserMetrics struct {
 // AnalyticsChannel is used to simulate sending data to an external analytics tool
 var AnalyticsChannel = make(chan UserMetrics, 100)
 var wg sync.WaitGroup
-var sem chan struct{}
 
 // FunnelStep represents a function that processes part of the funnel
 type FunnelStep func(*UserMetrics) FunnelStep
@@ -64,7 +63,6 @@ func CompletePurchase(metrics *UserMetrics) FunnelStep {
 			metrics.PurchaseCompletions++
 			fmt.Printf("User %d completed the purchase.\n", metrics.UserID)
 		}
-		defer func() { <-sem }()
 		// Send metrics to the AnalyticsChannel
 		AnalyticsChannel <- *metrics
 		return nil
@@ -89,13 +87,11 @@ func main() {
 	const numUsers = 5 // Simulate metrics for 5 users
 
 	// Launch the analytics collector as a Goroutine
-	sem = make(chan struct{}, 5) // Limit semaphore to numUsers
 	wg.Add(numUsers)
 	go AnalyticsCollector(&wg)
 
 	// Simulate each user going through the funnel
 	for userID := 1; userID <= numUsers; userID++ {
-		sem <- struct{}{}
 		metrics := &UserMetrics{UserID: userID}
 		step := VisitProduct(metrics)
 		for step != nil {

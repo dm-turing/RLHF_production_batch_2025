@@ -1,177 +1,151 @@
 package main
 
 import (
-	"database/sql"
-	"encoding/json"
-	"fmt"
+	"image/color"
 	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"strconv"
-	"strings"
-	"syscall"
+	"runtime"
 
-	"github.com/go-redis/redis"
-	_ "github.com/ncruces/go-sqlite3/driver"
-	_ "github.com/ncruces/go-sqlite3/embed"
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/vg"
 )
-
-type User struct {
-	ID    int    `json:"id"`
-	User  string `json:"username"`
-	Email string `json:"email"`
-}
-
-var (
-	db          *sql.DB
-	redisClient *redis.Client
-)
-
-func init() {
-	var err error
-	db, err = sql.Open("sqlite3", "users.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-}
 
 func main() {
-	// Setting up a signal handler
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+	// Create the plot values and labels.
+	values := plotter.Values{0.5, 10, 20, 30}
+	verticalLabels := []string{"A", "B", "C", "D"}
+	horizontalLabels := []string{"Label A", "Label B", "Label C", "Label D"}
 
-	go func() {
-		<-signals
-		log.Println("Shutting down the database instance gracefully...")
-		db.Close() // Close the database connection
-		os.Exit(0)
-	}()
-
-	redisClient = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-
-	http.HandleFunc("/users", handleUsers)
-	http.HandleFunc("/users/{id}", handleUser)
-	log.Println("Server running on :8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		log.Fatal(err)
-	}
-	select {}
-}
-
-func handleUsers(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		users, err := getAllUsers()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		json.NewEncoder(w).Encode(users)
-	} else if r.Method == http.MethodPost {
-		user := new(User)
-		if err := json.NewDecoder(r.Body).Decode(user); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if err := saveUser(user); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusCreated)
-	} else {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-func handleUser(w http.ResponseWriter, r *http.Request) {
-	var userID int
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) > 2 {
-		_userID, err := strconv.Atoi(parts[2])
-		userID = _userID
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-	}
-
-	user, err := getUserByID(userID)
+	// Create a vertical BarChart
+	p1 := plot.New()
+	verticalBarChart, err := plotter.NewBarChart(values, 0.5*vg.Centimeter)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
+		log.Panic(err)
 	}
-
-	json.NewEncoder(w).Encode(user)
-}
-
-func saveUser(user *User) error {
-	stmt, err := db.Prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)")
+	p1.Add(verticalBarChart)
+	p1.NominalX(verticalLabels...)
+	err = p1.Save(100, 100, "testdata/verticalBarChart.png")
 	if err != nil {
-		return err
+		log.Panic(err)
 	}
-	defer stmt.Close()
 
-	_, err = stmt.Exec(user.User, user.Email, user.Email) // Simplified for demonstration
+	// Create a horizontal BarChart
+	p2 := plot.New()
+	horizontalBarChart, err := plotter.NewBarChart(values, 0.5*vg.Centimeter)
+	horizontalBarChart.Horizontal = true // Specify a horizontal BarChart.
 	if err != nil {
-		return err
+		log.Panic(err)
 	}
-
-	redisKey := fmt.Sprintf("user:%d", user.ID)
-	// Create a map to hold the interface values
-	interfaceMap := make(map[string]interface{})
-
-	// Copy values from the string map to the interface map
-	for key, value := range map[string]string{
-		"username": user.User,
-		"email":    user.Email,
-	} {
-		interfaceMap[key] = value
-	}
-
-	// Now call HMSet with the correct type
-	return redisClient.HMSet(redisKey, interfaceMap).Err()
-}
-
-func getAllUsers() ([]*User, error) {
-	rows, err := db.Query("SELECT id, username, email FROM users")
+	p2.Add(horizontalBarChart)
+	p2.NominalY(horizontalLabels...)
+	err = p2.Save(100, 100, "testdata/horizontalBarChart_"+runtime.GOARCH+".png")
 	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	users := make([]*User, 0)
-	for rows.Next() {
-		user := new(User)
-		if err := rows.Scan(&user.ID, &user.User, &user.Email); err != nil {
-			return nil, err
-		}
-		users = append(users, user)
-	}
-	return users, nil
-}
-
-func getUserByID(id int) (*User, error) {
-	user := new(User)
-	row := db.QueryRow("SELECT id, username, email FROM users WHERE id = ?", id)
-	if row == nil {
-		return nil, sql.ErrNoRows
+		log.Panic(err)
 	}
 
-	if err := row.Scan(&user.ID, &user.User, &user.Email); err != nil {
-		return nil, err
+	// Now, make a different type of BarChart.
+	groupA := plotter.Values{20, 35, 30, 35, 27}
+	groupB := plotter.Values{25, 32, 34, 20, 25}
+	groupC := plotter.Values{12, 28, 15, 21, 8}
+	groupD := plotter.Values{30, 42, 6, 9, 12}
+
+	p := plot.New()
+	p.Title.Text = "Bar chart"
+	p.Y.Label.Text = "Heights"
+
+	w := vg.Points(8)
+
+	barsA, err := plotter.NewBarChart(groupA, w)
+	if err != nil {
+		log.Panic(err)
+	}
+	barsA.Color = color.RGBA{R: 255, A: 255}
+	barsA.Offset = -w / 2
+
+	barsB, err := plotter.NewBarChart(groupB, w)
+	if err != nil {
+		log.Panic(err)
+	}
+	barsB.Color = color.RGBA{R: 196, G: 196, A: 255}
+	barsB.Offset = w / 2
+
+	barsC, err := plotter.NewBarChart(groupC, w)
+	if err != nil {
+		log.Panic(err)
+	}
+	barsC.XMin = 6
+	barsC.Color = color.RGBA{B: 255, A: 255}
+	barsC.Offset = -w / 2
+
+	barsD, err := plotter.NewBarChart(groupD, w)
+	if err != nil {
+		log.Panic(err)
+	}
+	barsD.Color = color.RGBA{B: 255, R: 255, A: 255}
+	barsD.XMin = 6
+	barsD.Offset = w / 2
+
+	p.Add(barsA, barsB, barsC, barsD)
+	p.Legend.Add("A", barsA)
+	p.Legend.Add("B", barsB)
+	p.Legend.Add("C", barsC)
+	p.Legend.Add("D", barsD)
+	p.Legend.Top = true
+	p.NominalX("Zero", "One", "Two", "Three", "Four", "",
+		"Six", "Seven", "Eight", "Nine", "Ten")
+
+	p.Add(plotter.NewGlyphBoxes())
+	err = p.Save(300, 250, "testdata/barChart2.png")
+	if err != nil {
+		log.Panic(err)
 	}
 
-	redisKey := fmt.Sprintf("user:%d", user.ID)
-	userData, err := redisClient.HGetAll(redisKey).Result()
-	if err == nil {
-		fmt.Printf("User data from Redis: %+v\n", userData)
-	} else {
-		fmt.Printf("Error fetching user data from Redis: %v\n", err)
-	}
+	// Now, make a stacked BarChart.
+	p = plot.New()
+	p.Title.Text = "Bar chart"
+	p.Y.Label.Text = "Heights"
 
-	return user, nil
+	w = vg.Points(15)
+
+	barsA, err = plotter.NewBarChart(groupA, w)
+	if err != nil {
+		log.Panic(err)
+	}
+	barsA.Color = color.RGBA{R: 255, A: 255}
+	barsA.Offset = -w / 2
+
+	barsB, err = plotter.NewBarChart(groupB, w)
+	if err != nil {
+		log.Panic(err)
+	}
+	barsB.Color = color.RGBA{R: 196, G: 196, A: 255}
+	barsB.StackOn(barsA)
+
+	barsC, err = plotter.NewBarChart(groupC, w)
+	if err != nil {
+		log.Panic(err)
+	}
+	barsC.Offset = w / 2
+	barsC.Color = color.RGBA{B: 255, A: 255}
+
+	barsD, err = plotter.NewBarChart(groupD, w)
+	if err != nil {
+		log.Panic(err)
+	}
+	barsD.StackOn(barsC)
+	barsD.Color = color.RGBA{B: 255, R: 255, A: 255}
+
+	p.Add(barsA, barsB, barsC, barsD)
+	p.Legend.Add("A", barsA)
+	p.Legend.Add("B", barsB)
+	p.Legend.Add("C", barsC)
+	p.Legend.Add("D", barsD)
+	p.Legend.Top = true
+	p.NominalX("Zero", "One", "Two", "Three", "Four")
+
+	p.Add(plotter.NewGlyphBoxes())
+	err = p.Save(250, 250, "testdata/stackedBarChart.png")
+	if err != nil {
+		log.Panic(err)
+	}
 }

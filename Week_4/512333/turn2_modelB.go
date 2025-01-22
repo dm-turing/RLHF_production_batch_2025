@@ -16,6 +16,7 @@ type TodoItem struct {
 type State struct {
 	todos     []TodoItem
 	callbacks []func(newState *State)
+	AddTodo   func(string)
 }
 
 // NewState creates a new instance of the application state.
@@ -33,13 +34,6 @@ func (s *State) NotifyAll() {
 	for _, cb := range s.callbacks {
 		cb(s)
 	}
-}
-
-// AddTodo adds a new to-do item to the list and notifies all callbacks.
-func (s *State) AddTodo(text string) {
-	newItem := TodoItem{Text: text, Done: false, Index: len(s.todos)}
-	s.todos = append(s.todos, newItem)
-	s.NotifyAll()
 }
 
 // ToggleTodo toggles the done status of the to-do item at the specified index and notifies all callbacks.
@@ -125,8 +119,8 @@ func main() {
 
 	// Modify the addTodo method to publish state updates to the message bus.
 	state.AddTodo = func(text string) {
-		state.Mutex.Lock()
-		defer state.Mutex.Unlock()
+		mb.mtx.Lock()
+		defer mb.mtx.Unlock()
 		newItem := TodoItem{Text: text, Done: false, Index: len(state.todos)}
 		state.todos = append(state.todos, newItem)
 		mb.publish(state) // Notify all subscribers through the message bus
@@ -135,7 +129,7 @@ func main() {
 	// Subscribe a different process to handle updates
 	go func() {
 		ch := mb.subscribe()
-		defer mb.unsubscribe(ch)
+		defer mb.unsubscribe(<-ch)
 		for newState := range ch {
 			// Another process can now apply state updates appropriately
 			nState := newState.(*State)

@@ -1,0 +1,12 @@
+# .air.toml
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  bin = "turn1modela"
+  cmd = "go build -o ./tmp/main ."
+  include_ext = ["go", "html", "css", "js"]
+  exclude_dir = ["tmp", "vendor"]
+
+[log]
+  level = "info"

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -59,31 +58,22 @@ func main() {
 	fmt.Printf("Completed %d requests in %v\n", numRequests, duration)
 }
 
-// performRequest performs a single HTTP request and logs the result
-func performRequest(ctx context.Context, requestID int) {
-	// Simulate delay for every 5th request to induce timeout
-	if requestID%5 == 0 {
-		fmt.Printf("Simulated delay for request %d\n", requestID)
-		time.Sleep(3 * time.Second)
-	}
-
-	// Set a timeout for the request context
-	reqCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(reqCtx, "GET", targetURL, nil)
+// This is a helper function to simulate a successful request
+func performRequest(ctx context.Context, requestID int) bool {
+	req, err := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
 	if err != nil {
-		log.Printf("Error creating request: %v", err)
-		return
+		return false
 	}
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Printf("Request %d error: %v", requestID, err)
-		return
+		return false
 	}
 	defer resp.Body.Close()
 
-	log.Printf("Request %d response status: %s", requestID, resp.Status)
+	// Simulate a short delay
+	time.Sleep(100 * time.Millisecond)
+
+	return resp.StatusCode == http.StatusOK
 }

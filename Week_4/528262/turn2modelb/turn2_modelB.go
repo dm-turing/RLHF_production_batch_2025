@@ -6,28 +6,58 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/juju/ratelimit"
 	_ "github.com/ncruces/go-sqlite3/driver"
 	_ "github.com/ncruces/go-sqlite3/embed"
+	"github.com/rcrowley/go-metrics"
 )
 
 const (
-	maxRequests = 10 // Maximum number of requests allowed
-	refillRate  = 1  // Number of tokens to refill per second
-	burstSize   = 5  // Burst size
+	windowSize = 5 * time.Second  // Sliding window size
+	burstSize  = 10               // Burst size for each bucket
+	refillRate = float64(1) / 0.5 // Refill rate for each bucket (2 requests per second)
 )
 
 var (
-	rateLimiter = ratelimit.NewBucketWithRate(refillRate, burstSize)
-	db          *sql.DB
-	mutex       sync.Mutex
+	rateLimiter   *ratelimit.Bucket
+	db            *sql.DB
+	mutex         sync.Mutex
+	requestsMeter metrics.Meter
 )
 
 type Product struct {
 	ID    int     `json:"id"`
 	Name  string  `json:"name"`
 	Price float64 `json:"price"`
+}
+
+func init() {
+	// Initialize metrics and rate limiter
+	requestsMeter = metrics.NewMeter()
+	rateLimiter = ratelimit.NewBucketWithRate(refillRate, burstSize)
+
+	// Start a goroutine to adapt rate limiting based on traffic
+	go adaptRateLimiter()
+}
+
+func adaptRateLimiter() {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		// Calculate the average rate of requests in the last windowSize
+		averageRate := requestsMeter.Rate1() * float64(windowSize) / float64(time.Second)
+
+		// Adjust the rate limit based on the average rate
+		rateLimiter = ratelimit.NewBucketWithRate(averageRate*2, burstSize) // Double the rate for simplicity
+		// rateLimiter.SetRate(ratelimit.Limit(averageRate * 2))
+
+		// Log the current window size, available tokens, and errors
+		log.Printf("Window Size: %s, Available Tokens: %d, Average Rate: %f",
+			windowSize, rateLimiter.Available(), averageRate)
+	}
 }
 
 func productHandler(w http.ResponseWriter, r *http.Request) {
@@ -46,6 +76,9 @@ func productHandler(w http.ResponseWriter, r *http.Request) {
 	for _, product := range products {
 		fmt.Fprintf(w, "ID: %d, Name: %s, Price: %f\n", product.ID, product.Name, product.Price)
 	}
+
+	// Mark the request as processed
+	requestsMeter.Mark(1)
 }
 
 func getProducts() ([]Product, error) {

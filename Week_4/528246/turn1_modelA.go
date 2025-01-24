@@ -1,9 +1,8 @@
 package main
 
 import (
-	"math/rand"
-	// "crypto/rand"
 	"fmt"
+	"math/rand"
 	"time"
 )
 
@@ -56,7 +55,7 @@ func generatePassword() (string, error) {
 
 // Generate a random character from a given set
 func randomCharFromSet(set string) (byte, error) {
-	index := rand.Int31n(int32(len(set)))
+	index := rand.Intn(len(set))
 	return set[index], nil
 }
 
@@ -86,7 +85,7 @@ func main() {
 		select {
 		case t := <-ticker.C:
 			// Select a random user
-			userIndex := rand.Int31n(int32(len(users)))
+			userIndex := rand.Intn(len(users))
 			user := users[userIndex]
 
 			// Generate the password

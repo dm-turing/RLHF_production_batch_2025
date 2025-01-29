@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Define the Severity type with available levels of severity
@@ -27,11 +28,11 @@ const (
 
 // LogEntry represents a structured log entry
 type LogEntry struct {
-	Timestamp time.Time
-	Severity  Severity
-	Message   string
-	Path      string
-	UserID    int
+	Timestamp time.Time `json:"timestamp"`
+	Severity  Severity  `json:"severity"`
+	Message   string    `json:"message"`
+	Path      string    `json:"path"`
+	UserID    int       `json:"user_id"`
 }
 
 // Global in-memory log store and mutex for synchronization
@@ -61,21 +62,30 @@ func LogError(severity Severity, message string, path string, userID int) {
 	logStore = append(logStore, logEntry)
 	mu.Unlock()
 
-	// Format log message
-	logMsg := fmt.Sprintf("%s [%s] %s - Path: %s, UserID: %d", now.Format("2006-01-02 15:04:05"), severity, message, path, userID)
+	// Structured logging with logrus
+	logger := log.WithFields(log.Fields{
+		"time":     logEntry.Timestamp,
+		"severity": logEntry.Severity.String(),
+		"message":  logEntry.Message,
+		"path":     logEntry.Path,
+		"userId":   logEntry.UserID,
+	})
 
 	// Direct the output based on severity
-	if severity == DEBUG || severity == INFO {
-		log.Println(logMsg)
-	} else {
-		// Log to a file for WARNING, ERROR, FATAL, and CRITICAL
-		f, err := os.OpenFile("errors.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
-		if err != nil {
-			log.Fatalf("Error opening log file: %v", err)
+	switch severity {
+	case DEBUG, INFO:
+		logger.Info(message)
+	default:
+		logger.Warn(message) // Using Warn for simplification, you can map specific severities to appropriate log levels.
+		fileWriter, err := os.OpenFile("errors.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+		if err == nil {
+			defer fileWriter.Close()
+			log.SetOutput(fileWriter)
+			logger.Warn(message)
+			log.SetOutput(os.Stdout) // Reset output to stdout
+		} else {
+			logger.Error("Could not open log file")
 		}
-		defer f.Close()
-		fileLogger := log.New(f, "", log.LstdFlags)
-		fileLogger.Println(logMsg)
 	}
 }
 
@@ -119,8 +129,9 @@ func main() {
 	// Seed the random number generator
 	rand.Seed(time.Now().UnixNano())
 
-	// Set up a logger to log to the console for DEBUG and INFO
-	log.SetFlags(log.LstdFlags)
+	// Configure logrus for structured logging with JSON formatter
+	log.SetFormatter(&log.JSONFormatter{})
+	log.SetOutput(os.Stdout)
 
 	// Start log generation in a separate goroutine
 	go func() {

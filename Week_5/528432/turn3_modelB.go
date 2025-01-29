@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -11,6 +10,24 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/sirupsen/logrus"
+)
+
+// LogEntry represents a structured log entry
+type LogEntry struct {
+	Timestamp time.Time
+	Severity  Severity
+	Message   string
+	Path      string
+	UserID    int
+}
+
+// Global in-memory log store and mutex for synchronization
+var (
+	log      *logrus.Logger // logrus Global logger variable
+	logStore []LogEntry
+	mu       sync.Mutex
 )
 
 // Define the Severity type with available levels of severity
@@ -25,57 +42,46 @@ const (
 	CRITICAL
 )
 
-// LogEntry represents a structured log entry
-type LogEntry struct {
-	Timestamp time.Time
-	Severity  Severity
-	Message   string
-	Path      string
-	UserID    int
-}
+func init() {
+	log = logrus.New()
+	// Log as JSON instead of the default ASCII formatter.
+	log.Formatter = &logrus.JSONFormatter{}
 
-// Global in-memory log store and mutex for synchronization
-var (
-	logStore []LogEntry
-	mu       sync.Mutex
-)
+	// Output to stderr instead of stdout, could also be a file.
+	log.Out = os.Stderr
+
+	// Only log the warning severity or above.
+	log.Level = logrus.WarnLevel
+}
 
 // String representation of severity levels
 func (s Severity) String() string {
 	return [...]string{"INFO", "DEBUG", "WARNING", "ERROR", "FATAL", "CRITICAL"}[s]
 }
 
-// LogError creates and stores a log entry
 func LogError(severity Severity, message string, path string, userID int) {
 	now := time.Now()
-	logEntry := LogEntry{
-		Timestamp: now,
-		Severity:  severity,
-		Message:   message,
-		Path:      path,
-		UserID:    userID,
+	logEntry := logrus.Fields{
+		"timestamp": now,
+		"severity":  severity,
+		"message":   message,
+		"path":      path,
+		"user_id":   userID,
 	}
 
-	// Append to the in-memory log store
-	mu.Lock()
-	logStore = append(logStore, logEntry)
-	mu.Unlock()
-
-	// Format log message
-	logMsg := fmt.Sprintf("%s [%s] %s - Path: %s, UserID: %d", now.Format("2006-01-02 15:04:05"), severity, message, path, userID)
-
-	// Direct the output based on severity
-	if severity == DEBUG || severity == INFO {
-		log.Println(logMsg)
-	} else {
-		// Log to a file for WARNING, ERROR, FATAL, and CRITICAL
-		f, err := os.OpenFile("errors.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
-		if err != nil {
-			log.Fatalf("Error opening log file: %v", err)
-		}
-		defer f.Close()
-		fileLogger := log.New(f, "", log.LstdFlags)
-		fileLogger.Println(logMsg)
+	switch severity {
+	case DEBUG:
+		log.WithFields(logEntry).Debug("Log message")
+	case INFO:
+		log.WithFields(logEntry).Info("Log message")
+	case WARNING:
+		log.WithFields(logEntry).Warn("Log message")
+	case ERROR:
+		log.WithFields(logEntry).Error("Log message")
+	case FATAL:
+		log.WithFields(logEntry).Fatal("Log message")
+	case CRITICAL:
+		log.WithFields(logEntry).Panic("Log message")
 	}
 }
 
@@ -120,7 +126,7 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	// Set up a logger to log to the console for DEBUG and INFO
-	log.SetFlags(log.LstdFlags)
+	// log.SetFlags(log.LstdFlags)
 
 	// Start log generation in a separate goroutine
 	go func() {
